@@ -27,15 +27,18 @@ const char *shaderVertex =
     "//#extension GL_ARB_separate_shader_objects : enable\n"
     "out vec2 TexCoords;\n"
     "out vec4 ParticleColor;\n"
+    "uniform mat4 model;\n"
+    "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
     "uniform vec2 offset;\n"
     "uniform vec4 color;\n"
+    "uniform mat4 transform;\n"
     "void main()\n"
     "{\n"
     "    float scale = 10.0;\n"
     "    TexCoords = vertex.zw;\n"
     "    ParticleColor = color;\n"
-    "    gl_Position = projection * vec4((vertex.xy * scale) + offset, 0.0, 1.0);\n"
+    "    gl_Position = transform * vec4((vertex.xy * 1) + offset, 0.0, 5.0);\n"
     "}\n";
 /*
 const char* shaderFragment =
@@ -174,12 +177,6 @@ public:
         return source.c_str();
      }*/
 
-
-    void setUniformMatrix4x(const std::string &type, const glm::mat4 &matrix)
-    {
-        glUniformMatrix4fv(glGetUniformLocation(m_id, type.c_str()), 1, GL_FALSE, &matrix[0][0]);
-    }
-
     void setUniformInt(const std::string &type, const GLint value)
     {
         glUniform1i(glGetUniformLocation(m_id, type.c_str()), value);
@@ -191,6 +188,11 @@ public:
 
     void setUniformVec4(const std::string &type, const glm::vec4 &value) {
         glUniform4f(glGetUniformLocation(m_id, type.c_str()), value.x, value.y, value.z, value.w);
+    }
+
+    void setUniformMatrix4x4(const std::string &type, const glm::mat4 &matrix)
+    {
+        glUniformMatrix4fv(glGetUniformLocation(m_id, type.c_str()), 1, GL_FALSE, &matrix[0][0]);
     }
 
 protected:
@@ -213,8 +215,7 @@ protected:
         }
         else
         {
-            int logLenght;    // optional: de-allocate all resources once they've outlived their purpose:
-            // ------------------------------------------------------------------------
+            int logLenght;
             GLchar log[1024];
             glGetShaderInfoLog(shader, 1024, &logLenght, log);
             std::cerr << "[INFO] Shader compilation success ! " << log <<
@@ -256,7 +257,6 @@ protected:
 
 private:
 
-    // Shader program idvertices
     GLuint m_id;
     GLuint m_vertexShader;
     GLuint m_fragmentShader;

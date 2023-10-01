@@ -26,6 +26,10 @@ class ParticleSystem {
 public:
     ParticleSystem(Shader shader, unsigned int amount);
     ParticleSystem();
+    ~ParticleSystem() {
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+    }
     void Initialize();
     void Render();
     void Update(float dt, unsigned int newParticles, glm::vec2 offset);
@@ -107,6 +111,7 @@ void ParticleSystem::Update(float dt, unsigned int newParticles, glm::vec2 offse
         int unusedParticle = this->firstUnusedParticle();
         this->respawnParticle(this->m_particles[unusedParticle], offset);
     }
+
     // update all particles
     for (unsigned int i = 0; i < this->amount; ++i)
     {
@@ -115,7 +120,7 @@ void ParticleSystem::Update(float dt, unsigned int newParticles, glm::vec2 offse
         if (p.m_life > 0.0f)
         {	// particle is alive, thus update
             p.m_position -= p.m_velocity * dt;
-            p.m_color.a -= dt * 2.5f;
+            p.m_color.a -= dt * 1.f;
         }
     }
 }
@@ -144,8 +149,8 @@ unsigned int ParticleSystem::firstUnusedParticle()
 void ParticleSystem::respawnParticle(Particle &particle, glm::vec2 offset){
     float random = ((rand() % 100) - 50) / 10.0f;
     float rColor = 0.5f + ((rand() % 100) / 100.0f);
-    particle.m_position = random + offset;
+    particle.m_position =   offset;
     particle.m_color = glm::vec4(rColor, rColor, rColor, 1.0f);
     particle.m_life = 1.0f;
-    particle.m_velocity = glm::vec2(0.1f,0.1f) ;
+    particle.m_velocity = glm::vec2(0.01f,0.01f) ;
 }

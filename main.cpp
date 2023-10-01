@@ -18,7 +18,7 @@
 #include "3rdparty/stb_image.h"
 #include "3rdparty/nuklear.h"
 
-/*
+
 float vertices[] = {
     // positions          // colors           // texture coords
     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
@@ -31,7 +31,210 @@ unsigned int indices[] = {
     0, 1, 3, // first triangle
     1, 2, 3  // second triangle
 };
-*/
+
+
+
+enum CameraDirection {
+    FORWARD_DIRECTIOM = 0,
+    BACKWARD_DIRECTION = 1,
+    LEFT_DIRECTION = 2,
+    RIGHT_DIRECTION = 3
+};
+
+class CameraSettings
+{
+public:
+
+    CameraSettings() : position(0.0f, 0.0f, 10.0f), up(0.0f, 5.0f, 0.0f),
+        front(0.0f, 0.0f, -1.0f), cameraSpeed(5.0), fov(45.0), yaw(-90.0),
+        pitch(0.0)
+    {
+    }
+
+    glm::vec3 position;
+    glm::vec3 up;
+    glm::vec3 front;
+
+    float cameraSpeed;
+    float fov;
+    float yaw;
+    float pitch;
+};
+
+class FpsCamera
+{
+public:
+
+    FpsCamera() : m_position(0.0f, 0.0f, 10.0f), m_up(0.0f, 5.0f,  0.0f),
+        m_front(0.0f, 0.0f, -1.0f), m_cameraSpeed(5.0f)
+    {
+    }
+
+    FpsCamera(CameraSettings &settings) : m_settings(settings)
+    {
+        m_position = settings.position;
+        m_up = settings.up;
+        m_front = settings.front;
+        m_cameraSpeed = settings.cameraSpeed;
+        m_fov = settings.fov;
+        m_yaw = settings.yaw;
+        m_pitch = settings.pitch;
+    }
+
+    ~FpsCamera() { }
+
+    glm::vec3 getCameraPosition()
+    {
+        return m_position;
+    }
+
+    glm::vec3 getCameraFront()
+    {
+        return m_front;
+    }
+
+    glm::vec3 getCameraUp()
+    {
+        return m_up;
+    }
+
+    glm::vec3 getCameraRight()
+    {
+        return m_right;
+    }
+
+    float getSpeed()
+    {
+        return m_cameraSpeed;
+    }
+
+    float getFov()
+    {
+        return m_fov;
+    }
+
+    void setFov(float fov)
+    {
+        m_fov = fov;
+    }
+
+    void setFront(glm::vec3 front)
+    {
+        m_front = front;
+    }
+
+    void setRight(glm::vec3 right)
+    {
+        m_right = right;
+    }
+
+    void setUp(glm::vec3 up)
+    {
+        m_up = up;
+    }
+
+    void updateCameraDirection(CameraDirection direction, float deltaTime)
+    {
+        float cameraSpeed = m_cameraSpeed * deltaTime;
+        if(direction == CameraDirection::FORWARD_DIRECTIOM)
+        {
+            m_position += cameraSpeed * m_front;
+        }
+
+        if(direction == CameraDirection::BACKWARD_DIRECTION)
+        {
+            m_position -= cameraSpeed * m_front;
+        }
+
+        if(direction == CameraDirection::LEFT_DIRECTION)
+        {
+            /*m_position -= glm::normalize(
+                          glm::cross(m_front,
+                          m_up)) * cameraSpeed;*/
+            m_position -= cameraSpeed * m_right;
+        }
+
+        if(direction == CameraDirection::RIGHT_DIRECTION)
+        {
+            /*m_position += glm::normalize(
+                          glm::cross(m_front,
+                          m_up)) * cameraSpeed;*/
+
+            m_position += cameraSpeed * m_right;
+        }
+    }
+
+    void updateMouseCameraDirection(float xoffset, float yoffset/*, GLboolean constrainPitch = true*/)
+    {
+        float sensitivity = 0.1f;
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
+
+        m_yaw += xoffset;
+        m_pitch += yoffset;
+
+        if (m_pitch > 89.0f)
+            m_pitch = 89.0f;
+        if (m_pitch < -89.0f)
+            m_pitch = -89.0f;
+
+        computeCamera();
+    }
+
+    void updateCameraZoom(double xoffset, double yoffset)
+    {
+        if (m_fov >= 1.0f && m_fov <= 45.0f)
+            m_fov -= yoffset;
+        if (m_fov <= 1.0f)
+            m_fov = 1.0f;
+        if (m_fov >= 45.0f)
+            m_fov = 45.0f;
+    }
+
+    glm::mat4 getLookAtCamera()
+    {
+        return glm::lookAt(m_position, m_position + m_front, m_up);
+    }
+
+    void computeCamera()
+    {
+        glm::vec3 front;
+        front.x = cosf(glm::radians(m_yaw)) * cosf(glm::radians(m_pitch));
+        front.y = sinf(glm::radians(m_pitch));
+        front.z = sinf(glm::radians(m_yaw)) * cosf(glm::radians(m_pitch));
+        m_front = glm::normalize(front);
+
+        /*std::cerr << "front x : " << front.x
+                  << " front y : " << front.y
+                  << " front z : " << front.z << std::endl;*/
+
+        //m_right = glm::normalize(glm::cross(m_front, m_up));
+        //m_up    = glm::normalize(glm::cross(m_right, m_front));
+    }
+
+public:
+
+    CameraSettings m_settings;
+
+private:
+
+    glm::vec3 m_position;
+    glm::vec3 m_up;
+    glm::vec3 m_front;
+    glm::vec3 m_right;
+
+    float m_cameraSpeed;
+    float m_fov;
+    float m_yaw;
+    float m_pitch;
+};
+
+CameraSettings settings;
+FpsCamera g_camera(settings);
+
+bool firstMouse = true;
+double lastX =  800.0 / 2.0;
+double lastY =  600.0 / 2.0;
 
 class GLSettings
 {
@@ -57,6 +260,7 @@ public:
 
     GLWindow(GLSettings &settings) : m_settings(settings)
     {
+
         if(!glfwInit())
         {
             std::cout << "Failed initilize GLFW library!" << std::endl;
@@ -81,7 +285,6 @@ public:
     }
 
     int getWidthWindow()
-
     {
         return m_settings.windowWidth;
     }
@@ -98,13 +301,11 @@ public:
 
     void checkPoolEvents()
     {
-        // update other events like input handling
         glfwPollEvents();
     }
 
     void checkSwapBuffer()
     {
-        // put the stuff we've been drawing onto the display
         glfwSwapBuffers(m_window);
     }
 
@@ -135,40 +336,39 @@ public:
         fprintf(stderr, "Error callback: %s\n", description);
     }
 
-    static void mouseCallback(GLFWwindow* window, int button, int action, int mods)
+    /*static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     {
 
+    }*/
+
+    static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+    {
+        g_camera.updateCameraZoom(xoffset, yoffset);
     }
 
-    //glm::vec3 campos;
+    static void mouseCursorPositionCallback(GLFWwindow* window, double x, double y)
+    {
+        if (firstMouse)
+        {
+            lastX = x;
+            lastY = y;
+            firstMouse = false;
+        }
+
+        float xoffset = x - lastX;
+        float yoffset = lastY - y;
+
+        lastX = x;
+        lastY = y;
+
+        g_camera.updateMouseCameraDirection(xoffset, yoffset);
+    }
+
     static void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
             glfwSetWindowShouldClose(window, true);
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        {
-            //    campos =+ m_camera.getSpeed() *  m_camera.getCameraFront();
-            //
-            //    m_camera.updateCameraPosition(
-            //                campos);
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        {
-
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        {
-
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        {
-
         }
     }
 
@@ -184,13 +384,34 @@ public:
         glViewport(0, 0, width, height);
     }
 
-    //void setCamera(Camera camera)
-    //{
-    //    m_camera = camera;
-    //}
+    void updateCamera(float deltaTime)
+    {
+        if(glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
+        {
+            g_camera.updateCameraDirection(CameraDirection::FORWARD_DIRECTIOM,
+                                           deltaTime);
+        }
 
+        if(glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
+        {
+            g_camera.updateCameraDirection(CameraDirection::BACKWARD_DIRECTION,
+                                           deltaTime);
+        }
 
-private:
+        if(glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
+        {
+            g_camera.updateCameraDirection(CameraDirection::LEFT_DIRECTION,
+                                           deltaTime);
+        }
+
+        if(glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
+        {
+            g_camera.updateCameraDirection(CameraDirection::RIGHT_DIRECTION,
+                                           deltaTime);
+        }
+    }
+
+protected:
 
     void createWindow(int width, int height, std::string name)
     {
@@ -204,9 +425,13 @@ private:
         // Make the window's context current
         glfwMakeContextCurrent(m_window);
 
-        glfwSetMouseButtonCallback(m_window, mouseCallback);
+        //glfwSetMouseButtonCallback(m_window, mouseButtonCallback);
         glfwSetKeyCallback(m_window, keyboardCallback);
-        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+        glfwSetCursorPosCallback(m_window, mouseCursorPositionCallback);
+        glfwSetScrollCallback(m_window, scrollCallback);
+
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
         // start GLEW extension handler
         glewExperimental = GL_TRUE;
         glewInit();
@@ -225,6 +450,10 @@ public:
 
     Texture() {}
     ~Texture() {}
+
+    void glEnableGlBlend() {
+         glEnable(GL_BLEND);
+    }
 
     unsigned int loadTexture(const std::string &name)
     {
@@ -251,8 +480,8 @@ public:
             glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -329,265 +558,80 @@ int main(void)
     GLWindow window(settings);
 
     Shader shader;
-    shader.loadShader("shader.vs", TypeShader::VERTEX_SHADER);
-    shader.loadShader("shader.fs", TypeShader::FRAGMENT_SHADER);
+    shader.loadShader(shaderVertex, TypeShader::VERTEX_SHADER);
+    shader.loadShader(shaderFragment, TypeShader::FRAGMENT_SHADER);
     shader.createShaderProgram();
 
+    Texture tex;
 
-    ParticleSystem pSys(shader,1000);
+    ParticleSystem pSys(shader,10);
     pSys.Initialize();
 
-    /*GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vs, 1, &shaderVertex, NULL);
-    glCompileShader(vs);
-
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs, 1, &shaderFragment, NULL);
-    glCompileShader(fs);
-
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, fs);
-    glAttachShader(shaderProgram, vs);
-    glLinkProgram(shaderProgram);*/
-
-    /*  GLint mvp_location, vpos_location, vcol_location, tex_location;
-    //mvp_location  = glGetUniformLocation(shader.getShaderProgram(), "MVP");
-    vpos_location = glGetAttribLocation(shader.getShaderProgram(), "vPos");
-    vcol_locatitinyxml2on = glGetAttribLocation(shader.getShaderProgram(), "vCol");
-    tex_location  = glGetAttribLocation(shader.getShaderProgram(), "aTexCoord");
-
-    std::cout << vpos_location << std::endl;
-    std::cout << vcol_location << std::endl;
-    std::cout << tex_location << std::endl;
-
-    unsigned int vbo, vao, ebo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
-
-    glBindVertexArray(vao);
-    glCheckError();
-
-     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(vpos_location);
-#extension GL_ARB_separate_shader_objects : enable
-    glVertexAttribPointer(vcol_locatioprocessInputn, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(vcol_location);
-
-    // texture coord attribute
-    glVertexAttribPointer(tex_location, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(tex_location);
-
-tinyxml2
-
-    // load image, create texture and generate mipmaps
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load("box.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-
-    stbi_image_free(data);
-
+    tex.loadTexture("smoke-particle-texture-399x385.png");
+    tex.glEnableGlBlend();
     shader.useShaderProgram();
-
-    // Set texture in shader
-    shader.setUniformInt("texture1", 0);
-
-
-    // timing
-    float deltaTime = 0.0f;	// time between current frame and last frame
-    float lastFrame = 0.0f;
-
-    // Loop until the user closes the window
-    while (!window.checkCloseWindow())
-    {
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        //camera.updateSpeedCamera(deltaTime);
-
-        window.updateFpsCounter();
-        window.updateframeBufferSize();
-tinyxml2
-        // wipe the drawing surface clear
-        glEnable(GL_DEPTH_TEST);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glClearColor(0.2f, 0.5f, 0.7f, 0.6f);
-        glCheckError();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glCheckError();
-        glm::mat4 model;
-        glm::mat4 view;
-        glm::mat4 projection;
-        model = glm::rotate(model, glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-        // view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
-        float radius = 6.0f;
-        float camX = sin(glfwGetTime()) * radius;
-        float camZ = cos(glfwGetTime()) * radius;
-        view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-        projection = glm::perspective(glm::radians(45.0f),
-                                      static_cast<float>(window.getWidthWindow()) /
-                                          static_cast<float>(window.getHeightWindow()),
-                                      0.1f,
-                                      100.0f);
-        glCheckError();
-         //glm::mat4 transform;
-        //transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
-        //transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-
-        shader.useShaderProgram();
-        //glUniformMatrix4fv(mvp_location, 1, GL_FALSE, glm::value_ptr(transform));
-
-        shader.setUniformMatrix4xtinyxml24("projecti#extension GL_ARB_separate_shader_objects : enableon", projection);
-        shader.setUniformMatrix4x4("view", view);
-        //shader.setUniformMatrix4x4("model", model);
-
-        glBindVertexArray(vao);
-        //for(unsigned int i = 0; i < 10; i++)
-        //{
-            glm::mat4 model2;
-        model2 = glm::translate(model2, glm::vec3(0.0f, 0.0f, 0.0f));
-            //float angle = 20.0f * i;
-            model2 = glm::rotate(model2, glm::radians(0.0f), glm::vec3(1.0f, 0.3f, 0.5f));
-            shader.setUniformMatrix4x4("model", model2);
-
-            //glDrawArrays(GL_TRIANGLES, 0, 6);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-            //}
-
-        // draw points 0-3 from the currently bound vao with current in-use shader
-        //glBindVertexArray(vao);
-        //glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        window.checkPoolEvents();
-        window.checkSwapBuffer();
-    }
-
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
-
-    return 0;
-}*/
-
-  /*  unsigned int VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    // texture coord attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-    */
-
-    // load and create a textureGLWindow
-    // -------------------------
-    unsigned int texture1;
-    // texture 1
-    // ---------
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
-        // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // load image, create texture and generate mipmaps
-    int width, height, nrChannels;
-
-    unsigned char *data = stbi_load("box.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
-
-    // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
-    // -------------------------------------------------------------------------------------------
-    shader.useShaderProgram(); // don't forget to activate/use the shader before setting uniforms!
-    // either set it manually like so:
     glUniform1i(glGetUniformLocation(shader.getShaderProgram(), "sprite"), 0);
 
     // timing
     float deltaTime = 0.0f;	// time between current frame and last frame
     float lastFrame = 0.0f;
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
 
 
     // render loop
     // -----------
     while (!window.checkCloseWindow())
     {
-        window.updateFpsCounter();
-        window.updateframeBufferSize();
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+
+        window.updateFpsCounter();
+        window.updateframeBufferSize();
+        window.updateCamera(deltaTime);
+
+
         // render
         // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.2f, 0.5f, 0.7f, 0.6f);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        pSys.Update(deltaTime, 200);
-        pSys.Render();
-
         // bind textures on corresponding texture units
+
+
+         pSys.Update(deltaTime, 1);
+
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
+        //glBindTexture(GL_TEXTURE_2D, texture1);
 
         // render container
         shader.useShaderProgram();
-      //  glBindVertexArray(VAO);
-      //  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
+        projection = glm::perspective(glm::radians(g_camera.getFov()),
+                                      static_cast<float>(window.getWidthWindow()) /
+                                          static_cast<float>(window.getHeightWindow()),
+                                      0.1f,
+                                      100.0f);
+        shader.setUniformMatrix4x4("projection", projection);
+
+        view = g_camera.getLookAtCamera();
+        shader.setUniformMatrix4x4("view", view);
+
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::rotate(trans, glm::radians(0.0f), glm::vec3(0.0, 0.0, 5.0));
+        //trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+        unsigned int transformLoc = glGetUniformLocation(shader.getShaderProgram(), "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
+        pSys.Render();
+
 
         window.checkSwapBuffer();
         window.checkPoolEvents();
-
     }
 
-    /*glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-    */
+
     return 0;
 }

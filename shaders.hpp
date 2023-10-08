@@ -38,7 +38,7 @@ const char *shaderVertex =
     "    float scale = 10.0;\n"
     "    TexCoords = vertex.zw;\n"
     "    ParticleColor = color;\n"
-    "    gl_Position = transform * vec4((vertex.xy * 1) + offset, 0.0, 5.0);\n"
+    "    gl_Position = projection * model * view * transform * vec4((vertex.xy * 1) + offset, 0.0, 5.0);\n"
     "}\n";
 /*
 const char* shaderFragment =

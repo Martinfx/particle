@@ -13,12 +13,14 @@ public:
     Particle():m_position(0.0f),
         m_velocity(0.0f),
         m_color(1.0),
-        m_life(0.0f){}
+        m_life(0.0f),
+        m_rotate(0.0f){}
 
     glm::vec2 m_position;
     glm::vec2 m_velocity;
     glm::vec4 m_color;
     float m_life;
+    float m_rotate;
 };
 
 
@@ -33,6 +35,7 @@ public:
     void Initialize();
     void Render();
     void Update(float dt, unsigned int newParticles, glm::vec2 offset);
+    void AddParticles(short int type, glm::vec2 position, glm::vec2 velocity, float rotation, unsigned int newParticles, glm::vec2 offset);
 
 private:
     std::vector<Particle> m_particles;
@@ -42,7 +45,7 @@ private:
     Shader m_shader;
 
     unsigned int firstUnusedParticle();
-    void respawnParticle(Particle &particle, glm::vec2 offset = glm::vec2(0.0f, 0.0f));
+    void respawnParticle(Particle &particle, short type, glm::vec2 position, glm::vec2 velocity, float rotation, glm::vec2 offset = glm::vec2(0.0f, 0.0f));
 };
 
 ParticleSystem::ParticleSystem(Shader shader, unsigned int amount) :
@@ -94,6 +97,7 @@ void ParticleSystem::Render(){
         {
             m_shader.setUniformVec2("offset", particle.m_position);
             m_shader.setUniformVec4("color", particle.m_color);
+            //m_shader.setUniform("rotation", particle.m_rotate);
             //this->texture.Bind();
             glBindVertexArray(this->VAO);
             glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -109,7 +113,7 @@ void ParticleSystem::Update(float dt, unsigned int newParticles, glm::vec2 offse
     for (unsigned int i = 0; i < newParticles; ++i)
     {
         int unusedParticle = this->firstUnusedParticle();
-        this->respawnParticle(this->m_particles[unusedParticle], offset);
+        respawnParticle(m_particles[unusedParticle], 0, glm::vec2(1,1), glm::vec2(1,1), 60, offset);
     }
 
     // update all particles
@@ -122,6 +126,15 @@ void ParticleSystem::Update(float dt, unsigned int newParticles, glm::vec2 offse
             p.m_position -= p.m_velocity * dt;
             p.m_color.a -= dt * 1.f;
         }
+    }
+}
+
+void ParticleSystem::AddParticles(short int type, glm::vec2 position, glm::vec2 velocity, float rotation, unsigned int newParticles, glm::vec2 offset) {
+    // add new particles
+    for (unsigned int i = 0; i < newParticles; ++i)
+    {
+        int unusedParticle = firstUnusedParticle();
+        respawnParticle(m_particles[unusedParticle], type, position, velocity, rotation, offset);
     }
 }
 
@@ -146,11 +159,12 @@ unsigned int ParticleSystem::firstUnusedParticle()
     return 0;
 }
 
-void ParticleSystem::respawnParticle(Particle &particle, glm::vec2 offset){
+void ParticleSystem::respawnParticle(Particle& particle, short int type, glm::vec2 position, glm::vec2 velocity, float rotation, glm::vec2 offset){
     float random = ((rand() % 100) - 50) / 10.0f;
     float rColor = 0.5f + ((rand() % 100) / 100.0f);
-    particle.m_position =   offset;
+    particle.m_position =  random * offset;
     particle.m_color = glm::vec4(rColor, rColor, rColor, 1.0f);
-    particle.m_life = 1.0f;
+    particle.m_life = 1.f;
+    particle.m_rotate = rotation;
     particle.m_velocity = glm::vec2(0.01f,0.01f) ;
 }

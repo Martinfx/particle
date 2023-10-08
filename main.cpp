@@ -562,13 +562,19 @@ int main(void)
     shader.loadShader(shaderFragment, TypeShader::FRAGMENT_SHADER);
     shader.createShaderProgram();
 
-    Texture tex;
+    Texture texture;
 
     ParticleSystem pSys(shader,10);
     pSys.Initialize();
+    pSys.AddParticles(10,glm::vec2(0.1f,0.1f),glm::vec2(1,1),10,100,glm::vec2(0,0));
 
-    tex.loadTexture("smoke-particle-texture-399x385.png");
-    tex.glEnableGlBlend();
+    ParticleSystem pSys2(shader, 2);
+    pSys2.Initialize();
+    pSys2.AddParticles(10,glm::vec2(0.1f,0.1f),glm::vec2(10,10),10,100,glm::vec2(0,0));
+
+
+    texture.loadTexture("smoke-particle-texture-399x385.png");
+    texture.glEnableGlBlend();
     shader.useShaderProgram();
     glUniform1i(glGetUniformLocation(shader.getShaderProgram(), "sprite"), 0);
 
@@ -601,13 +607,21 @@ int main(void)
         // bind textures on corresponding texture units
 
 
-         pSys.Update(deltaTime, 1);
+        pSys.Update(deltaTime, 1);
+        pSys2.Update(deltaTime, 10);
 
         glActiveTexture(GL_TEXTURE0);
         //glBindTexture(GL_TEXTURE_2D, texture1);
 
         // render container
         shader.useShaderProgram();
+
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::rotate(trans, glm::radians(0.0f), glm::vec3(0.0, 0.0, 1.0));
+        //trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+        trans = glm::translate(trans, glm::vec3(0.0,0.0,0.0));
+        unsigned int transformLoc = glGetUniformLocation(shader.getShaderProgram(), "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
         projection = glm::perspective(glm::radians(g_camera.getFov()),
                                       static_cast<float>(window.getWidthWindow()) /
@@ -619,14 +633,11 @@ int main(void)
         view = g_camera.getLookAtCamera();
         shader.setUniformMatrix4x4("view", view);
 
-        glm::mat4 trans = glm::mat4(1.0f);
-        trans = glm::rotate(trans, glm::radians(0.0f), glm::vec3(0.0, 0.0, 5.0));
-        //trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
-        unsigned int transformLoc = glGetUniformLocation(shader.getShaderProgram(), "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+        glm::mat4 model = glm::mat4(1.0f);
+        shader.setUniformMatrix4x4("model", model);
 
         pSys.Render();
-
+        pSys2.Render();
 
         window.checkSwapBuffer();
         window.checkPoolEvents();

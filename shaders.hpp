@@ -21,6 +21,7 @@
     "}\n";
 */
 
+/*
 const char *shaderVertex =
     "#version 330 core\n"
     "layout (location = 0) in vec4 vertex;\n"
@@ -40,6 +41,31 @@ const char *shaderVertex =
     "    ParticleColor = color;\n"
     "    gl_Position = projection * model * view * transform * vec4((vertex.xy * 1) + offset, 0.0, 5.0);\n"
     "}\n";
+*/
+const char *shaderVertex =
+    "#version 330 core\n"
+    "layout (location = 0) in vec4 vertex;\n"
+    "//#extension GL_ARB_separate_shader_objects : enable\n"
+    "out vec2 TexCoords;\n"
+    "out vec4 ParticleColor;\n"
+    "uniform mat4 model;\n"
+    "uniform mat4 view;\n"
+    "uniform mat4 projection;\n"
+    "uniform vec3 offset;\n"
+    "uniform vec4 color;\n"
+    "//uniform mat4 transform;\n"
+    "void main()\n"
+    "{\n"
+    "    float scale = 10.0;\n"
+    "    TexCoords = vertex.zw;\n"
+    "    ParticleColor = color;\n"
+    "    //gl_Position = projection * model * view * transform * vec4((vertex.xy * 1) + offset, 0.0, 5.0);\n"
+    "    vec4 pos_view = view * vec4(offset.xyz, 1.0);\n"
+    "    pos_view.xy += 4 * (vertex.xy - vec2(0.5));\n"
+    "    gl_Position = projection * model * pos_view;\n"
+    " "
+    "}\n";
+
 /*
 const char* shaderFragment =
     "#version 330 core\n"
@@ -184,6 +210,10 @@ public:
 
     void setUniformVec2(const std::string &type, const glm::vec2 &value) {
         glUniform2f(glGetUniformLocation(m_id, type.c_str()), value.x, value.y);
+    }
+
+    void setUniformVec3(const std::string &type, const glm::vec3 &value) {
+        glUniform3f(glGetUniformLocation(m_id, type.c_str()), value.x, value.y, value.z);
     }
 
     void setUniformVec4(const std::string &type, const glm::vec4 &value) {
